@@ -1,0 +1,43 @@
+name: Build plugin zip
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check syntax
+        run: find . -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run tests
+        run: php tests/run.php && php tests/gateway.php
+
+      - name: Build zip
+        run: |
+          mkdir -p build/univapayment-woocommerce
+          cp -r univapayment-woocommerce.php readme.txt includes assets build/univapayment-woocommerce/
+          (cd build && zip -qr ../univapayment-woocommerce.zip univapayment-woocommerce)
+
+      # The file name stays the same, so the website can always link to the latest build.
+      - name: Publish the zip and link it on the commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          TAG="build-$GITHUB_RUN_NUMBER"
+          ZIP=univapayment-woocommerce.zip
+          printf 'Built from %s.\n\n%s\n' "$GITHUB_SHA" "${COMMIT_MESSAGE:-Manual run}" > notes.txt
+          gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" \
+            --title "Build $GITHUB_RUN_NUMBER (${GITHUB_SHA::7})" --notes-file notes.txt --latest
+          LINK="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$TAG/$ZIP"
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" -f body="[Download plugin]($LINK) (build $GITHUB_RUN_NUMBER)"
+          echo "### [Download plugin]($LINK)" >> "$GITHUB_STEP_SUMMARY"

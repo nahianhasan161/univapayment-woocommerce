@@ -1,5 +1,5 @@
 === UnivaPayment for WooCommerce ===
-Contributors: YOUR_WPORG_USERNAME
+Contributors: nahianhasan161
 Tags: bkash, nagad, payment gateway, woocommerce, bangladesh
 Requires at least: 6.5
 Tested up to: 7.1

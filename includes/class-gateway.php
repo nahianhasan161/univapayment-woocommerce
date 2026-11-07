@@ -9,7 +9,7 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 	public function __construct() {
 		$this->id                 = 'univapayment';
 		$this->method_title       = 'UnivaPayment';
-		$this->method_description = __( 'bKash and Nagad payments to your own number, checked from the SMS on your phone.', 'univapayment-woocommerce' );
+		$this->method_description = __( 'bKash and Nagad payments to your own number, checked from the SMS on your phone.', 'univapayment-for-woocommerce' );
 		$this->has_fields         = false;
 		$this->supports           = array( 'products' );
 
@@ -26,47 +26,47 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 	public function init_form_fields() {
 		$this->form_fields = array(
 			'enabled'        => array(
-				'title'   => __( 'Enable', 'univapayment-woocommerce' ),
+				'title'   => __( 'Enable', 'univapayment-for-woocommerce' ),
 				'type'    => 'checkbox',
-				'label'   => __( 'Accept payments with UnivaPayment', 'univapayment-woocommerce' ),
+				'label'   => __( 'Accept payments with UnivaPayment', 'univapayment-for-woocommerce' ),
 				'default' => 'no',
 			),
 			'title'          => array(
-				'title'   => __( 'Title at checkout', 'univapayment-woocommerce' ),
+				'title'   => __( 'Title at checkout', 'univapayment-for-woocommerce' ),
 				'type'    => 'text',
 				'default' => 'bKash / Nagad',
 			),
 			'description'    => array(
-				'title'   => __( 'Description at checkout', 'univapayment-woocommerce' ),
+				'title'   => __( 'Description at checkout', 'univapayment-for-woocommerce' ),
 				'type'    => 'textarea',
 				'default' => 'অর্ডার দেওয়ার পর পেমেন্ট পেজে নিয়ে যাওয়া হবে। সেখানে bKash বা Nagad-এ টাকা পাঠালে অর্ডার নিশ্চিত হবে।',
 			),
 			'api_key'        => array(
-				'title'       => __( 'API key', 'univapayment-woocommerce' ),
+				'title'       => __( 'API key', 'univapayment-for-woocommerce' ),
 				'type'        => 'password',
-				'description' => __( 'From Dashboard → Developers. A key starting upk_test_ uses the sandbox, and orders complete without real money.', 'univapayment-woocommerce' ),
+				'description' => __( 'From Dashboard → Developers. A key starting upk_test_ uses the sandbox, and orders complete without real money.', 'univapayment-for-woocommerce' ),
 			),
 			'webhook_secret' => array(
-				'title'       => __( 'Webhook secret', 'univapayment-woocommerce' ),
+				'title'       => __( 'Webhook secret', 'univapayment-for-woocommerce' ),
 				'type'        => 'password',
 				/* translators: %s: webhook address of this site */
-				'description' => sprintf( __( 'In Dashboard → Developers, set the webhook URL to %s and paste the secret it gives you here.', 'univapayment-woocommerce' ), '<code>' . esc_html( rest_url( 'univapayment/v1/webhook' ) ) . '</code>' ),
+				'description' => sprintf( __( 'In Dashboard → Developers, set the webhook URL to %s and paste the secret it gives you here.', 'univapayment-for-woocommerce' ), '<code>' . esc_html( rest_url( 'univapayment/v1/webhook' ) ) . '</code>' ),
 			),
 			'server'         => array(
-				'title'       => __( 'Server address', 'univapayment-woocommerce' ),
+				'title'       => __( 'Server address', 'univapayment-for-woocommerce' ),
 				'type'        => 'text',
 				'default'     => UNIVAPAYMENT_DEFAULT_SERVER,
-				'description' => __( 'Leave this as it is unless UnivaPayment tells you to change it.', 'univapayment-woocommerce' ),
+				'description' => __( 'Leave this as it is unless UnivaPayment tells you to change it.', 'univapayment-for-woocommerce' ),
 			),
 		);
 	}
 
 	public function admin_options() {
 		if ( 'BDT' !== get_woocommerce_currency() ) {
-			echo '<div class="notice notice-error inline"><p>' . esc_html__( 'UnivaPayment only works when the store currency is Bangladeshi Taka (BDT).', 'univapayment-woocommerce' ) . '</p></div>';
+			echo '<div class="notice notice-error inline"><p>' . esc_html__( 'UnivaPayment only works when the store currency is Bangladeshi Taka (BDT).', 'univapayment-for-woocommerce' ) . '</p></div>';
 		}
 		if ( 0 === strpos( (string) $this->get_option( 'api_key' ), 'upk_test_' ) ) {
-			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Sandbox key: orders complete from test SMS, with no real money. Use a live key before selling.', 'univapayment-woocommerce' ) . '</p></div>';
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Sandbox key: orders complete from test SMS, with no real money. Use a live key before selling.', 'univapayment-for-woocommerce' ) . '</p></div>';
 		}
 		parent::admin_options();
 	}
@@ -119,8 +119,8 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 		if ( is_wp_error( $payment ) ) {
 			wc_get_logger()->error( $payment->get_error_code() . ': ' . $payment->get_error_message(), array( 'source' => 'univapayment' ) );
 			$message = 'plan_limit_reached' === $payment->get_error_code() || 'not_live' === $payment->get_error_code()
-				? __( 'This payment method is not available right now. Please choose another.', 'univapayment-woocommerce' )
-				: __( 'The payment could not be started. Please try again.', 'univapayment-woocommerce' );
+				? __( 'This payment method is not available right now. Please choose another.', 'univapayment-for-woocommerce' )
+				: __( 'The payment could not be started. Please try again.', 'univapayment-for-woocommerce' );
 			wc_add_notice( $message, 'error' );
 			return array( 'result' => 'failure' );
 		}
@@ -131,7 +131,7 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 		$order->set_transaction_id( '' );
 		$order->save();
 		if ( 'test' === $payment['mode'] ) {
-			$order->add_order_note( __( 'Sandbox payment: no real money will be received for this order.', 'univapayment-woocommerce' ) );
+			$order->add_order_note( __( 'Sandbox payment: no real money will be received for this order.', 'univapayment-for-woocommerce' ) );
 		}
 
 		return array(
@@ -153,29 +153,29 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 			}
 			if ( wc_format_decimal( $order->get_total(), 2 ) !== $payment['amount'] ) {
 				/* translators: 1: amount paid, 2: order total */
-				$order->update_status( 'on-hold', sprintf( __( 'UnivaPayment completed ৳%1$s, but the order total is ৳%2$s. Check this order by hand.', 'univapayment-woocommerce' ), $payment['amount'], wc_format_decimal( $order->get_total(), 2 ) ) );
+				$order->update_status( 'on-hold', sprintf( __( 'UnivaPayment completed ৳%1$s, but the order total is ৳%2$s. Check this order by hand.', 'univapayment-for-woocommerce' ), $payment['amount'], wc_format_decimal( $order->get_total(), 2 ) ) );
 				return true;
 			}
 			$provider = isset( $payment['provider'] ) ? (string) $payment['provider'] : '';
 			$trx      = isset( $payment['trx_id'] ) ? (string) $payment['trx_id'] : '';
 			$order->payment_complete( $trx );
 			/* translators: 1: bKash or Nagad, 2: transaction ID */
-			$order->add_order_note( sprintf( __( 'UnivaPayment confirmed the payment. Method: %1$s. TrxID: %2$s.', 'univapayment-woocommerce' ), $provider, '' !== $trx ? $trx : '-' ) );
+			$order->add_order_note( sprintf( __( 'UnivaPayment confirmed the payment. Method: %1$s. TrxID: %2$s.', 'univapayment-for-woocommerce' ), $provider, '' !== $trx ? $trx : '-' ) );
 		} elseif ( 'review' === $status ) {
 			if ( ! $order->is_paid() && ! $order->has_status( 'on-hold' ) ) {
-				$order->update_status( 'on-hold', __( 'UnivaPayment could not match this automatically. Approve or reject it in your UnivaPayment dashboard.', 'univapayment-woocommerce' ) );
+				$order->update_status( 'on-hold', __( 'UnivaPayment could not match this automatically. Approve or reject it in your UnivaPayment dashboard.', 'univapayment-for-woocommerce' ) );
 			}
 		} elseif ( 'rejected' === $status ) {
 			if ( ! $order->has_status( 'cancelled' ) ) {
-				$order->update_status( 'cancelled', __( 'The payment was rejected in UnivaPayment.', 'univapayment-woocommerce' ) );
+				$order->update_status( 'cancelled', __( 'The payment was rejected in UnivaPayment.', 'univapayment-for-woocommerce' ) );
 			}
 		} elseif ( 'expired' === $status ) {
 			if ( $order->needs_payment() && ! $order->has_status( 'failed' ) ) {
-				$order->update_status( 'failed', __( 'The UnivaPayment payment expired before it was paid.', 'univapayment-woocommerce' ) );
+				$order->update_status( 'failed', __( 'The UnivaPayment payment expired before it was paid.', 'univapayment-for-woocommerce' ) );
 			}
 		} elseif ( 'refunded' === $status ) {
 			if ( ! $order->has_status( 'refunded' ) ) {
-				$order->update_status( 'refunded', __( 'Marked as refunded in UnivaPayment.', 'univapayment-woocommerce' ) );
+				$order->update_status( 'refunded', __( 'Marked as refunded in UnivaPayment.', 'univapayment-for-woocommerce' ) );
 			}
 		}
 		return true;
@@ -195,7 +195,7 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 			}
 		}
 		if ( $order->has_status( 'on-hold' ) ) {
-			echo '<p class="woocommerce-info">' . esc_html__( 'আপনার পেমেন্ট যাচাই করতে একটু সময় লাগবে। দোকান যাচাই করলেই অর্ডার নিশ্চিত হবে।', 'univapayment-woocommerce' ) . '</p>';
+			echo '<p class="woocommerce-info">' . esc_html__( 'আপনার পেমেন্ট যাচাই করতে একটু সময় লাগবে। দোকান যাচাই করলেই অর্ডার নিশ্চিত হবে।', 'univapayment-for-woocommerce' ) . '</p>';
 		}
 	}
 }

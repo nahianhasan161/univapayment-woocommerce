@@ -3,20 +3,20 @@
  * Plugin Name:       UnivaPayment for WooCommerce
  * Plugin URI:        https://univapayment-web.univapayment.workers.dev
  * Description:       Take bKash and Nagad payments on your own number. UnivaPayment checks each payment from the SMS on your phone and confirms the order.
- * Version:           1.0.0
- * Requires at least: 6.4
+ * Version:           1.0.1
+ * Requires at least: 6.5
  * Requires PHP:      7.4
  * Requires Plugins:  woocommerce
  * WC requires at least: 8.0
  * Author:            UnivaPayment
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       univapayment-woocommerce
+ * Text Domain:       univapayment-for-woocommerce
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'UNIVAPAYMENT_VERSION', '1.0.0' );
+define( 'UNIVAPAYMENT_VERSION', '1.0.1' );
 define( 'UNIVAPAYMENT_FILE', __FILE__ );
 define( 'UNIVAPAYMENT_DEFAULT_SERVER', 'https://univapayment-web.univapayment.workers.dev' );
 
@@ -65,7 +65,7 @@ add_filter(
 	'plugin_action_links_' . plugin_basename( __FILE__ ),
 	static function ( $links ) {
 		$url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=univapayment' );
-		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings', 'univapayment-woocommerce' ) . '</a>' );
+		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings', 'univapayment-for-woocommerce' ) . '</a>' );
 		return $links;
 	}
 );

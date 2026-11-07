@@ -21,6 +21,7 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_before_thankyou', array( $this, 'on_thankyou' ) );
+		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 	}
 
 	public function init_form_fields() {
@@ -52,6 +53,16 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 				/* translators: %s: webhook address of this site */
 				'description' => sprintf( __( 'In Dashboard → Developers, set the webhook URL to %s and paste the secret it gives you here.', 'univapayment-for-woocommerce' ), '<code>' . esc_html( rest_url( 'univapayment/v1/webhook' ) ) . '</code>' ),
 			),
+			'checkout_mode'  => array(
+				'title'       => __( 'Payment window', 'univapayment-for-woocommerce' ),
+				'type'        => 'select',
+				'default'     => 'popup',
+				'options'     => array(
+					'popup'    => __( 'Popup on this site', 'univapayment-for-woocommerce' ),
+					'redirect' => __( 'Separate payment page', 'univapayment-for-woocommerce' ),
+				),
+				'description' => __( 'With the popup, customers pay without leaving your site.', 'univapayment-for-woocommerce' ),
+			),
 			'server'         => array(
 				'title'       => __( 'Server address', 'univapayment-for-woocommerce' ),
 				'type'        => 'text',
@@ -80,6 +91,11 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 		return new UnivaPayment_Api( '' !== $server ? $server : UNIVAPAYMENT_DEFAULT_SERVER, (string) $this->get_option( 'api_key' ) );
 	}
 
+	/** Where the customer goes after placing the order: our popup on this site, or the hosted page. */
+	private function payment_redirect( WC_Order $order, $checkout_url ) {
+		return 'popup' === $this->get_option( 'checkout_mode' ) ? $order->get_checkout_payment_url( true ) : $checkout_url;
+	}
+
 	public function webhook_secret() {
 		return (string) $this->get_option( 'webhook_secret' );
 	}
@@ -96,7 +112,7 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 			if ( ! is_wp_error( $open ) && in_array( $open['status'], array( 'initiated', 'pending' ), true ) && $open['amount'] === $amount ) {
 				return array(
 					'result'   => 'success',
-					'redirect' => $open['checkout_url'],
+					'redirect' => $this->payment_redirect( $order, $open['checkout_url'] ),
 				);
 			}
 		}
@@ -136,8 +152,25 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 
 		return array(
 			'result'   => 'success',
-			'redirect' => $payment['checkout_url'],
+			'redirect' => $this->payment_redirect( $order, $payment['checkout_url'] ),
 		);
+	}
+
+	/** The order's payment page on this site. Opens the popup, with a button in case it was closed. */
+	public function receipt_page( $order_id ) {
+		$order = wc_get_order( $order_id );
+		$url   = $order ? (string) $order->get_meta( self::META_URL ) : '';
+		if ( ! $order || '' === $url || ! $order->needs_payment() ) {
+			return;
+		}
+		$server = untrailingslashit( '' !== (string) $this->get_option( 'server' ) ? (string) $this->get_option( 'server' ) : UNIVAPAYMENT_DEFAULT_SERVER );
+		wp_enqueue_script( 'univapayment-checkout', $server . '/js/checkout.js', array(), UNIVAPAYMENT_VERSION, true );
+		wp_add_inline_script(
+			'univapayment-checkout',
+			sprintf( 'window.UnivaPayment && window.UnivaPayment.open(%s);', wp_json_encode( $url ) )
+		);
+		echo '<p>' . esc_html__( 'পেমেন্ট উইন্ডো খুলছে। না খুললে নিচের বাটনে চাপুন।', 'univapayment-for-woocommerce' ) . '</p>';
+		echo '<p><a class="button alt" data-univapayment href="' . esc_url( $url ) . '">' . esc_html__( 'এখন পরিশোধ করুন', 'univapayment-for-woocommerce' ) . '</a></p>';
 	}
 
 	/** Brings the order in line with the payment. Safe to repeat for the same status. */
@@ -161,6 +194,11 @@ class UnivaPayment_Gateway extends WC_Payment_Gateway {
 			$order->payment_complete( $trx );
 			/* translators: 1: bKash or Nagad, 2: transaction ID */
 			$order->add_order_note( sprintf( __( 'UnivaPayment confirmed the payment. Method: %1$s. TrxID: %2$s.', 'univapayment-for-woocommerce' ), $provider, '' !== $trx ? $trx : '-' ) );
+		} elseif ( 'pending' === $status ) {
+			// The customer was sent back while the payment is still being checked, usually because the phone is offline.
+			if ( $order->has_status( 'pending' ) ) {
+				$order->update_status( 'on-hold', __( 'Waiting for the payment SMS. The order completes by itself when it arrives, or approve it in your UnivaPayment dashboard.', 'univapayment-for-woocommerce' ) );
+			}
 		} elseif ( 'review' === $status ) {
 			if ( ! $order->is_paid() && ! $order->has_status( 'on-hold' ) ) {
 				$order->update_status( 'on-hold', __( 'UnivaPayment could not match this automatically. Approve or reject it in your UnivaPayment dashboard.', 'univapayment-for-woocommerce' ) );

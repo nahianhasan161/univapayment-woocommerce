@@ -5,6 +5,7 @@
 //   UNIVA_SERVER=https://... UNIVA_TEST_KEY=upk_test_... UNIVA_DEVICE_TOKEN=... php tests/gateway.php
 define( 'ABSPATH', __DIR__ . '/' );
 define( 'UNIVAPAYMENT_DEFAULT_SERVER', getenv( 'UNIVA_SERVER' ) ?: 'https://server.invalid' );
+define( 'UNIVAPAYMENT_VERSION', 'test' );
 
 class WP_Error {
 	private $code, $message;
@@ -20,6 +21,10 @@ function rest_url( $p ) { return 'https://shop.test/wp-json/' . $p; }
 function home_url() { return 'https://shop.test'; }
 function add_action() {}
 function wp_json_encode( $v ) { return json_encode( $v ); }
+function esc_url( $v ) { return $v; }
+$GLOBALS['scripts'] = array();
+function wp_enqueue_script( $h, $src ) { $GLOBALS['scripts'][ $h ] = $src; }
+function wp_add_inline_script( $h, $code ) { $GLOBALS['inline'][ $h ] = $code; }
 function untrailingslashit( $v ) { return rtrim( $v, '/' ); }
 function wc_format_decimal( $v, $d ) { return number_format( (float) $v, $d, '.', '' ); }
 function get_woocommerce_currency() { return $GLOBALS['currency']; }
@@ -68,6 +73,7 @@ class WC_Order {
 	public function update_status( $s, $n = '' ) { $this->status = $s; $this->notes[] = $n; }
 	public function payment_complete( $t ) { $this->paid = true; $this->trx = $t; $this->status = 'processing'; }
 	public function get_checkout_order_received_url() { return 'https://shop.test/thanks'; }
+	public function get_checkout_payment_url( $on_checkout = false ) { return 'https://shop.test/pay-order/' . $this->id; }
 	public function get_payment_method() { return 'univapayment'; }
 }
 class WP_REST_Response {
@@ -143,6 +149,9 @@ check( 'an expired payment fails the order', 'failed' === $o->status );
 $o = $order_for();
 UnivaPayment_Gateway::apply_payment( $o, $pay( 'rejected' ) );
 check( 'a rejected payment cancels the order', 'cancelled' === $o->status );
+$o = $order_for();
+UnivaPayment_Gateway::apply_payment( $o, $pay( 'pending' ) );
+check( 'a payment still being checked holds the order, so stock is not released', 'on-hold' === $o->status );
 
 // Starting a payment.
 $calls = array();
@@ -171,6 +180,27 @@ $GLOBALS['fake_http'] = function ( $url, $args ) use ( &$calls, $pay ) {
 };
 $gateway->process_payment( 7 );
 check( 'paying again after expiry starts a new payment', 'pay_two' === $o->get_meta( UnivaPayment_Gateway::META_PAYMENT ) && $calls[1][1]['headers']['Idempotency-Key'] !== $first );
+
+// Popup mode: the order's own payment page opens the popup.
+$GLOBALS['settings']['checkout_mode'] = 'popup';
+$popup_gateway = new UnivaPayment_Gateway();
+$GLOBALS['fake_http'] = function () use ( $pay ) {
+	return array( 'code' => 201, 'body' => json_encode( $pay( 'initiated', array( 'id' => 'pay_pop' ) ) ) );
+};
+$o = new WC_Order( 9, '150' );
+$GLOBALS['orders'][9] = $o;
+$r = $popup_gateway->process_payment( 9 );
+check( 'popup mode stays on the shop', 'https://shop.test/pay-order/9' === $r['redirect'] );
+ob_start();
+$popup_gateway->receipt_page( 9 );
+$html = ob_get_clean();
+check( 'the payment page loads the popup script from the server', isset( $GLOBALS['scripts']['univapayment-checkout'] ) && str_ends_with( $GLOBALS['scripts']['univapayment-checkout'], '/js/checkout.js' ) );
+check( 'the popup opens the payment, with a button as a fallback', str_contains( $GLOBALS['inline']['univapayment-checkout'], '"https:\\/\\/u.test\\/pay\\/x"' ) && str_contains( $html, 'data-univapayment href="https://u.test/pay/x"' ) );
+$o->paid = true;
+ob_start();
+$popup_gateway->receipt_page( 9 );
+check( 'a paid order shows no popup', '' === ob_get_clean() );
+$GLOBALS['settings']['checkout_mode'] = '';
 
 $calls = array();
 $GLOBALS['fake_http'] = function ( $url, $args ) use ( &$calls, $pay ) {

@@ -4,7 +4,7 @@ Tags: bkash, nagad, payment gateway, woocommerce, bangladesh
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,8 @@ If a payment cannot be matched automatically, the order goes on hold until you a
 
 = Features =
 
-* Customers pay with bKash or Nagad on a hosted payment page, in Bangla or English.
+* Customers pay with bKash or Nagad in a popup on your own site, in Bangla or English. A separate payment page is also available.
+* If the shop's phone is slow to answer, the customer goes back to your site and the order waits on hold until the payment is verified.
 * Money goes directly to your own number. UnivaPayment never holds it.
 * Orders are confirmed automatically through a signed webhook, and checked again with the API before they are marked paid.
 * Works with the classic checkout and the block checkout, and with HPOS order storage.
@@ -49,7 +50,8 @@ This plugin connects to the UnivaPayment service to create and check payments. I
 * Service: UnivaPayment, at https://univapayment-web.univapayment.workers.dev (the address can be changed in the plugin settings).
 * When a customer places an order with this payment method, the plugin sends the order total, the currency, the order number, the WooCommerce order ID and the order's thank-you page address, together with your API key. No customer name, email, phone number or address is sent.
 * When UnivaPayment sends a webhook to your site, and when a customer comes back to the thank-you page, the plugin asks the service for that payment's status, sending only the payment ID and your API key.
-* On the hosted payment page, the customer enters the number they pay from. That page belongs to UnivaPayment, not to this plugin.
+* In popup mode, the order's payment page loads the UnivaPayment checkout script (/js/checkout.js) from the same service, which opens the payment window on your site.
+* In the payment window, the customer enters the number they pay from. That window belongs to UnivaPayment, not to this plugin.
 
 Terms of use: https://univapayment-web.univapayment.workers.dev/terms
 Privacy policy: https://univapayment-web.univapayment.workers.dev/privacy
@@ -78,6 +80,10 @@ Check that the method is enabled, an API key is saved, and the store currency is
 
 == Changelog ==
 
+= 1.1.0 =
+* The payment opens in a popup on your site. Choose "Separate payment page" in the settings to keep the old behaviour.
+* When verification takes longer, the customer returns to your site and the order is put on hold instead of being left unpaid.
+
 = 1.0.1 =
 * Text domain now matches the plugin directory slug, univapayment-for-woocommerce.
 * Requires WordPress 6.5, for the WooCommerce dependency header.
@@ -87,6 +93,9 @@ Check that the method is enabled, an API key is saved, and the store currency is
 * First release: hosted bKash and Nagad checkout, signed webhooks, block checkout and HPOS support.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Payments now open in a popup on your site.
 
 = 1.0.1 =
 Readme and translation fixes. No change to payments.
